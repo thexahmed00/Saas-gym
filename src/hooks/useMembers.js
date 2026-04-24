@@ -1,28 +1,70 @@
-import { useState } from 'react';
-import { SEED_MEMBERS } from '../data/seedData';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { PLANS } from '../data/seedData';
 
 /*
- * useMembers encapsulates all member state.
- * To migrate to Supabase/Firebase, replace useState with your
- * async data-fetching layer and expose the same { members, addMember } API.
+ * useMembers — reads from and writes to Supabase `members` table.
+ *
+ * Column aliasing keeps the JS-side API in camelCase (fingerprintId, expiryDate)
+ * while the DB stays in snake_case. No mapping layer needed.
  */
+const SELECT_COLS =
+  'id, name, phone, plan, fingerprintId:fingerprint_id, joinDate:join_date, expiryDate:expiry_date';
+
 export function useMembers() {
-  const [members, setMembers] = useState(SEED_MEMBERS);
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
 
-  function addMember({ name, phone, plan }) {
-    const nextId = members.length + 1;
-    const fingerprintId = `FP-${String(nextId).padStart(3, '0')}`;
-    const joinDate = new Date().toISOString().split('T')[0];
-    const durationMap = { daily: 1, monthly: 30, quarterly: 90, annual: 365 };
-    const exp = new Date();
-    exp.setDate(exp.getDate() + (durationMap[plan] ?? 30));
-    const expiryDate = exp.toISOString().split('T')[0];
+  const fetchMembers = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('members')
+      .select(SELECT_COLS)
+      .order('created_at', { ascending: true });
 
-    setMembers(prev => [
-      ...prev,
-      { id: nextId, name, phone, plan, fingerprintId, joinDate, expiryDate },
-    ]);
-  }
+    if (error) {
+      setError(error.message);
+      setMembers([]);
+    } else {
+      setError(null);
+      setMembers(data ?? []);
+    }
+    setLoading(false);
+  }, []);
 
-  return { members, addMember };
+  useEffect(() => { fetchMembers(); }, [fetchMembers]);
+
+  const addMember = useCallback(async ({ name, phone, plan }) => {
+    // Pick next FP-XXX based on existing count (no member deletion in v1).
+    const fingerprintId = `FP-${String(members.length + 1).padStart(3, '0')}`;
+    const days = PLANS[plan]?.durationDays ?? 30;
+
+    const today = new Date();
+    const expiry = new Date();
+    expiry.setDate(today.getDate() + days);
+    const fmt = d => d.toISOString().split('T')[0];
+
+    const { data, error } = await supabase
+      .from('members')
+      .insert({
+        name,
+        phone,
+        plan,
+        fingerprint_id: fingerprintId,
+        join_date:   fmt(today),
+        expiry_date: fmt(expiry),
+      })
+      .select(SELECT_COLS)
+      .single();
+
+    if (error) {
+      setError(error.message);
+      return null;
+    }
+    setMembers(prev => [...prev, data]);
+    return data;
+  }, [members.length]);
+
+  return { members, loading, error, addMember, refetch: fetchMembers };
 }

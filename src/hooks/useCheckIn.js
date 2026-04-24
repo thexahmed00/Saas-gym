@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
 import { memberStatus } from '../utils/dateUtils';
 
 /*
@@ -8,37 +9,59 @@ import { memberStatus } from '../utils/dateUtils';
  * Replace simulateScan() with a WebSocket or polling handler that connects
  * to a local Node.js bridge running the MorphoKit SDK (MorphoSmart MSO 1300 E3).
  * The bridge should emit events like: { type: 'scan', fingerprintId: 'FP-001' }
- * Pass that fingerprintId into resolveScan() below instead of the random simulation.
+ * Look up the member by fingerprintId, then call resolveScan(member).
  *
  * Compatible SDK ecosystem: Morpho MSO 1300 series (STQC certified),
  * also works with Mantra / Startek / Precision ISO-template fingerprints.
  */
 
 export const SCAN_STATES = {
-  IDLE: 'idle',
-  SCANNING: 'scanning',
-  SUCCESS: 'success',
-  DENIED: 'denied',
+  IDLE:      'idle',
+  SCANNING:  'scanning',
+  SUCCESS:   'success',
+  DENIED:    'denied',
   NOT_FOUND: 'notFound',
 };
 
 const SCAN_DURATION_MS = 2200;
 const RESET_DELAY_MS   = 3000;
 
+// PostgREST-aliased select for the join. Returns:
+//   { id, timestamp, member: { id, name, plan, fingerprintId } }
+const LOG_SELECT =
+  'id, timestamp, member:members(id, name, plan, fingerprintId:fingerprint_id)';
+
 export function useCheckIn(members) {
-  const [scanState, setScanState] = useState(SCAN_STATES.IDLE);
-  const [scanResult, setScanResult] = useState(null); // { member, reason }
+  const [scanState,  setScanState]  = useState(SCAN_STATES.IDLE);
+  const [scanResult, setScanResult] = useState(null);
   const [checkInLog, setCheckInLog] = useState([]);
 
-  const resolveScan = useCallback((member) => {
+  // Load today's log on mount + when members list changes.
+  const fetchTodayLog = useCallback(async () => {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const { data, error } = await supabase
+      .from('check_ins')
+      .select(LOG_SELECT)
+      .gte('timestamp', startOfDay.toISOString())
+      .order('timestamp', { ascending: false });
+
+    if (!error && data) {
+      setCheckInLog(data.map(row => ({ ...row, timestamp: new Date(row.timestamp) })));
+    }
+  }, []);
+
+  useEffect(() => { fetchTodayLog(); }, [fetchTodayLog]);
+
+  const resolveScan = useCallback(async (member) => {
     if (!member) {
       setScanState(SCAN_STATES.NOT_FOUND);
       setScanResult({ reason: 'Fingerprint not registered' });
       return;
     }
 
-    const status = memberStatus(member.expiryDate);
-    if (status === 'expired') {
+    if (memberStatus(member.expiryDate) === 'expired') {
       setScanState(SCAN_STATES.DENIED);
       setScanResult({ member, reason: 'Membership expired' });
       return;
@@ -46,10 +69,17 @@ export function useCheckIn(members) {
 
     setScanState(SCAN_STATES.SUCCESS);
     setScanResult({ member });
-    setCheckInLog(prev => [
-      { id: Date.now(), member, timestamp: new Date() },
-      ...prev,
-    ]);
+
+    // Persist + optimistically prepend to local log.
+    const { data, error } = await supabase
+      .from('check_ins')
+      .insert({ member_id: member.id })
+      .select(LOG_SELECT)
+      .single();
+
+    if (!error && data) {
+      setCheckInLog(prev => [{ ...data, timestamp: new Date(data.timestamp) }, ...prev]);
+    }
   }, []);
 
   const simulateScan = useCallback(() => {
@@ -63,13 +93,10 @@ export function useCheckIn(members) {
       const expiredMembers = members.filter(m => memberStatus(m.expiryDate) === 'expired');
 
       if (roll < 0.65 && activeMembers.length > 0) {
-        // 65 % — success
         resolveScan(activeMembers[Math.floor(Math.random() * activeMembers.length)]);
       } else if (roll < 0.80 && expiredMembers.length > 0) {
-        // 15 % — denied (expired member)
         resolveScan(expiredMembers[Math.floor(Math.random() * expiredMembers.length)]);
       } else {
-        // 20 % — not found
         resolveScan(null);
       }
 

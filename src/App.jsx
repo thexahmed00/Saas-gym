@@ -11,11 +11,10 @@ const PAGES = { dashboard: Dashboard, checkin: CheckIn, members: Members, plans:
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
-  const { members, addMember } = useMembers();
+  const { members, loading, error, addMember } = useMembers();
   const { scanState, scanResult, checkInLog, simulateScan } = useCheckIn(members);
 
   const PageComponent = PAGES[activePage];
-
   const pageProps = {
     dashboard: { members, checkInLog },
     checkin:   { scanState, scanResult, checkInLog, onScan: simulateScan },
@@ -29,7 +28,24 @@ export default function App() {
       onNavigate={setActivePage}
       deviceConnected={false}
     >
-      <PageComponent {...pageProps[activePage]} />
+      {loading
+        ? <StatusScreen text="Loading from Supabase…" />
+        : error
+        ? <StatusScreen text={`Connection error: ${error}`} accent />
+        : <PageComponent {...pageProps[activePage]} />}
     </Layout>
+  );
+}
+
+function StatusScreen({ text, accent = false }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      height: '100%', color: accent ? '#e94560' : '#6b7280',
+      fontFamily: "'Bebas Neue', sans-serif",
+      fontSize: '20px', letterSpacing: '0.1em',
+    }}>
+      {text}
+    </div>
   );
 }
