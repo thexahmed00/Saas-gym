@@ -5,11 +5,8 @@ import { memberStatus } from '../utils/dateUtils';
 /*
  * Scanner state machine: idle → scanning → success|denied|notFound → idle
  *
- * REAL INTEGRATION NOTE:
- * Replace simulateScan() with a WebSocket or polling handler that connects
- * to a local Node.js bridge running the MorphoKit SDK (MorphoSmart MSO 1300 E3).
- * The bridge should emit events like: { type: 'scan', fingerprintId: 'FP-001' }
- * Look up the member by fingerprintId, then call resolveScan(member).
+ * Electron mode: window.electronAPI present → IPC to main process → Morpho SDK
+ * Browser mode: simulateScan() timeout fallback for Mac dev
  *
  * Compatible SDK ecosystem: Morpho MSO 1300 series (STQC certified),
  * also works with Mantra / Startek / Precision ISO-template fingerprints.
@@ -86,11 +83,34 @@ export function useCheckIn(members, gymId) {
     }
   }, [gymId]);
 
+  // Electron IPC: register scan result listener, re-register when members/resolveScan change.
+  useEffect(() => {
+    if (!window.electronAPI) return;
+    const cleanup = window.electronAPI.onScanResult(({ type, fingerprintId }) => {
+      const member = fingerprintId
+        ? members.find(m => m.fingerprintId === fingerprintId) ?? null
+        : null;
+      resolveScan(type === 'notFound' ? null : member);
+      setTimeout(() => {
+        setScanState(SCAN_STATES.IDLE);
+        setScanResult(null);
+      }, RESET_DELAY_MS);
+    });
+    return cleanup;
+  }, [members, resolveScan]);
+
   const simulateScan = useCallback(() => {
     if (scanState !== SCAN_STATES.IDLE) return;
     setScanState(SCAN_STATES.SCANNING);
     setScanResult(null);
 
+    if (window.electronAPI) {
+      // Electron: main process drives the scan, result arrives via onScanResult listener
+      window.electronAPI.startScan();
+      return;
+    }
+
+    // Browser fallback simulation
     setTimeout(() => {
       const roll = Math.random();
       const activeMembers  = members.filter(m => memberStatus(m.expiryDate) !== 'expired');

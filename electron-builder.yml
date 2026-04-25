@@ -1,0 +1,26 @@
+appId: com.irontrack.gym
+productName: IronTrack
+copyright: Copyright © 2024 IronTrack
+
+directories:
+  output: dist-electron
+
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  # Replace with a real .ico before production build
+  # icon: public/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  installerIcon: public/favicon.svg

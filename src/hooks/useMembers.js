@@ -70,5 +70,18 @@ export function useMembers(gymId) {
     return data;
   }, [gymId, members.length]);
 
-  return { members, loading, error, addMember, refetch: fetchMembers };
+  const linkFingerprint = useCallback(async (memberId, fingerprintId) => {
+    const { data, error } = await supabase
+      .from('members')
+      .update({ fingerprint_id: fingerprintId })
+      .eq('id', memberId)
+      .eq('gym_id', gymId)
+      .select(SELECT_COLS)
+      .single();
+    if (error) { setError(error.message); return false; }
+    setMembers(prev => prev.map(m => m.id === memberId ? data : m));
+    return true;
+  }, [gymId]);
+
+  return { members, loading, error, addMember, linkFingerprint, refetch: fetchMembers };
 }

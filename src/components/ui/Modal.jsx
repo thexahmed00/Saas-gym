@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import Button from './Button';
 
-export default function Modal({ title, onClose, children }) {
+export default function Modal({ title, onClose, children, maxWidth = '480px' }) {
   useEffect(() => {
     const handleKey = e => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handleKey);
@@ -26,7 +26,7 @@ export default function Modal({ title, onClose, children }) {
           border: '1px solid #1e1e2e',
           borderRadius: '16px',
           width: '100%',
-          maxWidth: '480px',
+          maxWidth,
           padding: '28px',
           animation: 'fade-in 0.18s ease',
         }}

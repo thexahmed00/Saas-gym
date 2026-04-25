@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import MembersTable from './MembersTable';
 import AddMemberModal from './AddMemberModal';
+import SyncDeviceModal from './SyncDeviceModal';
 import Button from '../ui/Button';
 
-export default function Members({ members, onAddMember }) {
+export default function Members({ members, onAddMember, onLinkFingerprint }) {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showSync, setShowSync] = useState(false);
 
   return (
     <div>
@@ -26,9 +28,14 @@ export default function Members({ members, onAddMember }) {
             {members.length} total members
           </p>
         </div>
-        <Button variant="primary" onClick={() => setShowModal(true)}>
-          + Add Member
-        </Button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Button variant="ghost" onClick={() => setShowSync(true)}>
+            ⟳ Sync Device
+          </Button>
+          <Button variant="primary" onClick={() => setShowModal(true)}>
+            + Add Member
+          </Button>
+        </div>
       </div>
 
       {/* Search bar + table card */}
@@ -65,6 +72,14 @@ export default function Members({ members, onAddMember }) {
 
       {showModal && (
         <AddMemberModal onClose={() => setShowModal(false)} onAdd={onAddMember} />
+      )}
+
+      {showSync && (
+        <SyncDeviceModal
+          members={members}
+          onLinkFingerprint={onLinkFingerprint}
+          onClose={() => setShowSync(false)}
+        />
       )}
     </div>
   );

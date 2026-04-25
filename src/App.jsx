@@ -24,14 +24,14 @@ export default function App() {
 
 function AuthedApp({ gymId }) {
   const [activePage, setActivePage] = useState('dashboard');
-  const { members, loading, error, addMember } = useMembers(gymId);
+  const { members, loading, error, addMember, linkFingerprint } = useMembers(gymId);
   const { scanState, scanResult, checkInLog, simulateScan } = useCheckIn(members, gymId);
 
   const PageComponent = PAGES[activePage];
   const pageProps = {
     dashboard: { members, checkInLog },
     checkin:   { scanState, scanResult, checkInLog, onScan: simulateScan },
-    members:   { members, onAddMember: addMember },
+    members:   { members, onAddMember: addMember, onLinkFingerprint: linkFingerprint },
     plans:     { members },
   };
 
