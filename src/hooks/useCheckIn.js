@@ -31,26 +31,29 @@ const RESET_DELAY_MS   = 3000;
 const LOG_SELECT =
   'id, timestamp, member:members(id, name, plan, fingerprintId:fingerprint_id)';
 
-export function useCheckIn(members) {
+export function useCheckIn(members, gymId) {
   const [scanState,  setScanState]  = useState(SCAN_STATES.IDLE);
   const [scanResult, setScanResult] = useState(null);
   const [checkInLog, setCheckInLog] = useState([]);
 
-  // Load today's log on mount + when members list changes.
+  // Load today's log on mount + when gym changes.
   const fetchTodayLog = useCallback(async () => {
+    if (!gymId) { setCheckInLog([]); return; }
+
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
     const { data, error } = await supabase
       .from('check_ins')
       .select(LOG_SELECT)
+      .eq('gym_id', gymId)
       .gte('timestamp', startOfDay.toISOString())
       .order('timestamp', { ascending: false });
 
     if (!error && data) {
       setCheckInLog(data.map(row => ({ ...row, timestamp: new Date(row.timestamp) })));
     }
-  }, []);
+  }, [gymId]);
 
   useEffect(() => { fetchTodayLog(); }, [fetchTodayLog]);
 
@@ -70,17 +73,18 @@ export function useCheckIn(members) {
     setScanState(SCAN_STATES.SUCCESS);
     setScanResult({ member });
 
-    // Persist + optimistically prepend to local log.
+    if (!gymId) return;
+
     const { data, error } = await supabase
       .from('check_ins')
-      .insert({ member_id: member.id })
+      .insert({ gym_id: gymId, member_id: member.id })
       .select(LOG_SELECT)
       .single();
 
     if (!error && data) {
       setCheckInLog(prev => [{ ...data, timestamp: new Date(data.timestamp) }, ...prev]);
     }
-  }, []);
+  }, [gymId]);
 
   const simulateScan = useCallback(() => {
     if (scanState !== SCAN_STATES.IDLE) return;

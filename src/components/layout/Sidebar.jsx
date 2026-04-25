@@ -1,3 +1,5 @@
+import { useAuth } from '../../contexts/AuthContext';
+
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard',      icon: '▦' },
   { id: 'checkin',   label: 'Check-In',        icon: '⬡' },
@@ -6,6 +8,8 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar({ active, onNavigate, deviceConnected }) {
+  const { user, gym, signOut } = useAuth();
+
   return (
     <aside style={{
       width: '220px',
@@ -18,20 +22,33 @@ export default function Sidebar({ active, onNavigate, deviceConnected }) {
     }}>
       {/* Logo */}
       <div style={{
-        padding: '28px 24px 24px',
+        padding: '24px 20px 20px',
         borderBottom: '1px solid #1e1e2e',
       }}>
         <div style={{
           fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: '28px',
+          fontSize: '26px',
           letterSpacing: '0.12em',
           color: '#e94560',
           lineHeight: 1,
         }}>
           IRON<span style={{ color: '#f0f0f8' }}>TRACK</span>
         </div>
-        <div style={{ fontSize: '11px', color: '#4b5563', letterSpacing: '0.1em', marginTop: '4px' }}>
-          GYM MANAGEMENT
+        {gym && (
+          <div style={{
+            fontSize: '11px',
+            color: '#9ca3af',
+            letterSpacing: '0.06em',
+            marginTop: '6px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }} title={gym.name}>
+            {gym.name}
+          </div>
+        )}
+        <div style={{ fontSize: '10px', color: '#4b5563', letterSpacing: '0.1em', marginTop: '2px' }}>
+          {gym?.city ?? 'HYDERABAD'}
         </div>
       </div>
 
@@ -81,9 +98,63 @@ export default function Sidebar({ active, onNavigate, deviceConnected }) {
         })}
       </nav>
 
+      {/* User block */}
+      {user && (
+        <div style={{
+          padding: '14px 16px',
+          borderTop: '1px solid #1e1e2e',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+        }}>
+          <div style={{
+            width: '32px', height: '32px',
+            borderRadius: '50%',
+            background: 'rgba(233,69,96,0.15)',
+            color: '#e94560',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: "'Bebas Neue', sans-serif",
+            fontSize: '15px',
+            letterSpacing: '0.04em',
+            flexShrink: 0,
+          }}>
+            {user.email?.[0]?.toUpperCase() ?? 'U'}
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{
+              fontSize: '11px',
+              color: '#e0e0e8',
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }} title={user.email}>
+              {user.email}
+            </div>
+            <button
+              onClick={signOut}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                color: '#6b7280',
+                fontSize: '11px',
+                cursor: 'pointer',
+                fontFamily: "'DM Sans', sans-serif",
+                marginTop: '2px',
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = '#e94560'}
+              onMouseLeave={e => e.currentTarget.style.color = '#6b7280'}
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Morpho Device Status */}
       <div style={{
-        padding: '16px 20px',
+        padding: '14px 20px',
         borderTop: '1px solid #1e1e2e',
         display: 'flex',
         alignItems: 'center',

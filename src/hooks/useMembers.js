@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase';
 import { PLANS } from '../data/seedData';
 
 /*
- * useMembers — reads from and writes to Supabase `members` table.
+ * useMembers — reads from and writes to Supabase `members` table,
+ * scoped to a single gymId (the authenticated owner's gym).
  *
  * Column aliasing keeps the JS-side API in camelCase (fingerprintId, expiryDate)
  * while the DB stays in snake_case. No mapping layer needed.
@@ -11,16 +12,19 @@ import { PLANS } from '../data/seedData';
 const SELECT_COLS =
   'id, name, phone, plan, fingerprintId:fingerprint_id, joinDate:join_date, expiryDate:expiry_date';
 
-export function useMembers() {
+export function useMembers(gymId) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
   const fetchMembers = useCallback(async () => {
+    if (!gymId) { setMembers([]); setLoading(false); return; }
+
     setLoading(true);
     const { data, error } = await supabase
       .from('members')
       .select(SELECT_COLS)
+      .eq('gym_id', gymId)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -31,16 +35,18 @@ export function useMembers() {
       setMembers(data ?? []);
     }
     setLoading(false);
-  }, []);
+  }, [gymId]);
 
   useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
   const addMember = useCallback(async ({ name, phone, plan }) => {
+    if (!gymId) { setError('No active gym'); return null; }
+
     // Pick next FP-XXX based on existing count (no member deletion in v1).
     const fingerprintId = `FP-${String(members.length + 1).padStart(3, '0')}`;
     const days = PLANS[plan]?.durationDays ?? 30;
 
-    const today = new Date();
+    const today  = new Date();
     const expiry = new Date();
     expiry.setDate(today.getDate() + days);
     const fmt = d => d.toISOString().split('T')[0];
@@ -48,23 +54,21 @@ export function useMembers() {
     const { data, error } = await supabase
       .from('members')
       .insert({
+        gym_id:         gymId,
         name,
         phone,
         plan,
         fingerprint_id: fingerprintId,
-        join_date:   fmt(today),
-        expiry_date: fmt(expiry),
+        join_date:      fmt(today),
+        expiry_date:    fmt(expiry),
       })
       .select(SELECT_COLS)
       .single();
 
-    if (error) {
-      setError(error.message);
-      return null;
-    }
+    if (error) { setError(error.message); return null; }
     setMembers(prev => [...prev, data]);
     return data;
-  }, [members.length]);
+  }, [gymId, members.length]);
 
   return { members, loading, error, addMember, refetch: fetchMembers };
 }
