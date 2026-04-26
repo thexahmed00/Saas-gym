@@ -10,7 +10,7 @@ import { PLANS } from '../data/seedData';
  * while the DB stays in snake_case. No mapping layer needed.
  */
 const SELECT_COLS =
-  'id, name, phone, plan, fingerprintId:fingerprint_id, joinDate:join_date, expiryDate:expiry_date';
+  'id, name, phone, plan, fingerprintId:fingerprint_id, joinDate:join_date, expiryDate:expiry_date, photoUrl:photo_url';
 
 export function useMembers(gymId) {
   const [members, setMembers] = useState([]);
@@ -39,10 +39,9 @@ export function useMembers(gymId) {
 
   useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
-  const addMember = useCallback(async ({ name, phone, plan }) => {
+  const addMember = useCallback(async ({ name, phone, plan, photoBlob }) => {
     if (!gymId) { setError('No active gym'); return null; }
 
-    // Pick next FP-XXX based on existing count (no member deletion in v1).
     const fingerprintId = `FP-${String(members.length + 1).padStart(3, '0')}`;
     const days = PLANS[plan]?.durationDays ?? 30;
 
@@ -50,6 +49,20 @@ export function useMembers(gymId) {
     const expiry = new Date();
     expiry.setDate(today.getDate() + days);
     const fmt = d => d.toISOString().split('T')[0];
+
+    let photoUrl = null;
+    if (photoBlob) {
+      const path = `${gymId}/${Date.now()}.jpg`;
+      const { error: uploadErr } = await supabase.storage
+        .from('member-photos')
+        .upload(path, photoBlob, { contentType: 'image/jpeg' });
+      if (!uploadErr) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('member-photos')
+          .getPublicUrl(path);
+        photoUrl = publicUrl;
+      }
+    }
 
     const { data, error } = await supabase
       .from('members')
@@ -61,6 +74,7 @@ export function useMembers(gymId) {
         fingerprint_id: fingerprintId,
         join_date:      fmt(today),
         expiry_date:    fmt(expiry),
+        photo_url:      photoUrl,
       })
       .select(SELECT_COLS)
       .single();

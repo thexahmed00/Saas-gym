@@ -73,7 +73,24 @@ export default function MembersTable({ members, search }) {
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
                 <TD>
-                  <div style={{ fontWeight: 600 }}>{m.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {m.photoUrl ? (
+                      <img src={m.photoUrl} alt={m.name} style={{
+                        width: '34px', height: '34px', borderRadius: '50%',
+                        objectFit: 'cover', border: '1px solid #1e1e2e', flexShrink: 0,
+                      }} />
+                    ) : (
+                      <div style={{
+                        width: '34px', height: '34px', borderRadius: '50%',
+                        background: '#1e1e2e', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', fontSize: '14px', flexShrink: 0,
+                        color: '#4b5563',
+                      }}>
+                        {m.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div style={{ fontWeight: 600 }}>{m.name}</div>
+                  </div>
                 </TD>
                 <TD>
                   <span style={{ fontFamily: 'monospace', fontSize: '13px', color: '#9ca3af' }}>
