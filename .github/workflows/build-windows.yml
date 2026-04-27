@@ -27,6 +27,7 @@ jobs:
         run: npm run build:desktop -- --win
 
       - name: Upload installer
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: IronTrack-Windows
