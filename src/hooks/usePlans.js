@@ -27,17 +27,26 @@ export function usePlans(gymId) {
       .select('plan_prices')
       .eq('id', gymId)
       .single()
-      .then(({ data }) => setPrices(data?.plan_prices ?? null));
+      .then(({ data, error }) => {
+        if (error) console.error('[usePlans] fetch error:', error);
+        else setPrices(data?.plan_prices ?? null);
+      });
   }, [gymId]);
 
   async function updatePrice(planId, newPrice) {
     setSaving(true);
     const updated = { ...(prices ?? {}), [planId]: newPrice };
+    // Optimistic update so UI reflects immediately
+    setPrices(updated);
     const { error } = await supabase
       .from('gyms')
       .update({ plan_prices: updated })
       .eq('id', gymId);
-    if (!error) setPrices(updated);
+    if (error) {
+      console.error('[usePlans] update error:', error);
+      // Revert optimistic update on failure
+      setPrices(prices);
+    }
     setSaving(false);
     return !error;
   }

@@ -205,7 +205,7 @@ export default function AddMemberModal({ onClose, onAdd, plans = DEFAULT_PLANS }
         {/* ── Plan ── */}
         <FIELD label="Membership Plan">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            {Object.values(PLANS).map(plan => {
+            {Object.values(plans).map(plan => {
               const clr = PLAN_COLORS[plan.id];
               const selected = form.plan === plan.id;
               return (
