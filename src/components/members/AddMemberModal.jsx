@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
-import { PLANS } from '../../data/seedData';
+import { PLANS as DEFAULT_PLANS } from '../../data/seedData';
 
 const FIELD = ({ label, children }) => (
   <div style={{ marginBottom: '18px' }}>
@@ -41,7 +41,7 @@ const PLAN_COLORS = {
 
 const PREVIEW_SIZE = 220;
 
-export default function AddMemberModal({ onClose, onAdd }) {
+export default function AddMemberModal({ onClose, onAdd, plans = DEFAULT_PLANS }) {
   const [form, setForm]       = useState({ name: '', phone: '+91 ', plan: 'monthly' });
   const [errors, setErrors]   = useState({});
   const [cameraOn, setCameraOn]         = useState(false);

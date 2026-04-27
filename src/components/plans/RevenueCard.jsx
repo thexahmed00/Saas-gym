@@ -1,9 +1,8 @@
 import { formatINR } from '../../utils/revenueUtils';
-import { PLANS } from '../../data/seedData';
 import { memberStatus } from '../../utils/dateUtils';
 
-export default function RevenueCard({ members }) {
-  const rows = Object.values(PLANS).map(plan => {
+export default function RevenueCard({ members, plans }) {
+  const rows = Object.values(plans).map(plan => {
     const active = members.filter(
       m => m.plan === plan.id && memberStatus(m.expiryDate) !== 'expired'
     );
@@ -38,7 +37,6 @@ export default function RevenueCard({ members }) {
         </p>
       </div>
 
-      {/* Breakdown */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
         {rows.map(({ plan, count, contribution }) => (
           <div key={plan.id} style={{
@@ -61,7 +59,6 @@ export default function RevenueCard({ members }) {
         ))}
       </div>
 
-      {/* Total */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',

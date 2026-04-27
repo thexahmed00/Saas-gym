@@ -1,14 +1,12 @@
 import PlanCard from './PlanCard';
 import RevenueCard from './RevenueCard';
-import { PLANS } from '../../data/seedData';
 import { activeMembersPerPlan } from '../../utils/revenueUtils';
 
-export default function Plans({ members }) {
-  const counts = activeMembersPerPlan(members);
+export default function Plans({ members, plans, onUpdatePrice, savingPlan }) {
+  const counts = activeMembersPerPlan(members, plans);
 
   return (
     <div>
-      {/* Page header */}
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{
           fontFamily: "'Bebas Neue', sans-serif",
@@ -21,19 +19,23 @@ export default function Plans({ members }) {
           PLANS & REVENUE
         </h1>
         <p style={{ color: '#6b7280', fontSize: '14px', marginTop: '6px' }}>
-          Pricing tiers and revenue breakdown
+          Pricing tiers and revenue breakdown · click ✏ to edit a price
         </p>
       </div>
 
-      {/* Plan cards */}
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '32px' }}>
-        {Object.values(PLANS).map(plan => (
-          <PlanCard key={plan.id} plan={plan} activeCount={counts[plan.id] ?? 0} />
+        {Object.values(plans).map(plan => (
+          <PlanCard
+            key={plan.id}
+            plan={plan}
+            activeCount={counts[plan.id] ?? 0}
+            onUpdatePrice={onUpdatePrice}
+            saving={savingPlan}
+          />
         ))}
       </div>
 
-      {/* Revenue summary */}
-      <RevenueCard members={members} />
+      <RevenueCard members={members} plans={plans} />
     </div>
   );
 }

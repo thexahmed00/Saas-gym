@@ -7,6 +7,7 @@ import Plans from './components/plans/Plans';
 import LoginScreen from './components/auth/LoginScreen';
 import { useMembers } from './hooks/useMembers';
 import { useCheckIn } from './hooks/useCheckIn';
+import { usePlans } from './hooks/usePlans';
 import { useAuth } from './contexts/AuthContext';
 
 const PAGES = { dashboard: Dashboard, checkin: CheckIn, members: Members, plans: Plans };
@@ -26,13 +27,14 @@ function AuthedApp({ gymId }) {
   const [activePage, setActivePage] = useState('dashboard');
   const { members, loading, error, addMember, linkFingerprint } = useMembers(gymId);
   const { scanState, scanResult, checkInLog, simulateScan } = useCheckIn(members, gymId);
+  const { plans, saving: savingPlan, updatePrice } = usePlans(gymId);
 
   const PageComponent = PAGES[activePage];
   const pageProps = {
     dashboard: { members, checkInLog },
     checkin:   { scanState, scanResult, checkInLog, onScan: simulateScan },
-    members:   { members, onAddMember: addMember, onLinkFingerprint: linkFingerprint },
-    plans:     { members },
+    members:   { members, plans, onAddMember: addMember, onLinkFingerprint: linkFingerprint },
+    plans:     { members, plans, onUpdatePrice: updatePrice, savingPlan },
   };
 
   return (

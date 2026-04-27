@@ -1,15 +1,15 @@
 import { PLANS } from '../data/seedData';
 import { memberStatus } from './dateUtils';
 
-export function estimatedMonthlyRevenue(members) {
+export function estimatedMonthlyRevenue(members, plans = PLANS) {
   return members
     .filter(m => memberStatus(m.expiryDate) !== 'expired')
-    .reduce((sum, m) => sum + (PLANS[m.plan]?.monthlyRate ?? 0), 0);
+    .reduce((sum, m) => sum + (plans[m.plan]?.monthlyRate ?? 0), 0);
 }
 
-export function activeMembersPerPlan(members) {
+export function activeMembersPerPlan(members, plans = PLANS) {
   const counts = {};
-  Object.keys(PLANS).forEach(p => { counts[p] = 0; });
+  Object.keys(plans).forEach(p => { counts[p] = 0; });
   members
     .filter(m => memberStatus(m.expiryDate) !== 'expired')
     .forEach(m => { if (counts[m.plan] !== undefined) counts[m.plan]++; });

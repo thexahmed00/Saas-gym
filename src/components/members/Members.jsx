@@ -4,7 +4,7 @@ import AddMemberModal from './AddMemberModal';
 import SyncDeviceModal from './SyncDeviceModal';
 import Button from '../ui/Button';
 
-export default function Members({ members, onAddMember, onLinkFingerprint }) {
+export default function Members({ members, plans, onAddMember, onLinkFingerprint }) {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showSync, setShowSync] = useState(false);
@@ -71,7 +71,7 @@ export default function Members({ members, onAddMember, onLinkFingerprint }) {
       </div>
 
       {showModal && (
-        <AddMemberModal onClose={() => setShowModal(false)} onAdd={onAddMember} />
+        <AddMemberModal onClose={() => setShowModal(false)} onAdd={onAddMember} plans={plans} />
       )}
 
       {showSync && (
