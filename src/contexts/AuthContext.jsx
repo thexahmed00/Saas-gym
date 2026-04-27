@@ -62,7 +62,10 @@ export function AuthProvider({ children }) {
     supabase.auth.signUp({
       email,
       password,
-      options: { data: { gym_name: gymName } },
+      options: {
+        data: { gym_name: gymName },
+        emailRedirectTo: `${window.location.origin}/`,
+      },
     });
 
   const signOut = () => supabase.auth.signOut();
