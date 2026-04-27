@@ -1,7 +1,6 @@
 appId: com.irontrack.gym
 productName: IronTrack
 copyright: Copyright © 2024 IronTrack
-publish: never
 
 directories:
   output: dist-electron

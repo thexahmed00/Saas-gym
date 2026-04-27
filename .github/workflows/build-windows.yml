@@ -20,11 +20,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Vite + Electron
+      - name: Build React app
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: npm run build:desktop -- --win
+        run: npm run build
+
+      - name: Package Electron installer
+        run: npx electron-builder --win --publish never
 
       - name: Upload installer
         if: always()
