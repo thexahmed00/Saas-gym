@@ -39,9 +39,7 @@ export function usePlans(gymId) {
     // Optimistic update so UI reflects immediately
     setPrices(updated);
     const { error } = await supabase
-      .from('gyms')
-      .update({ plan_prices: updated })
-      .eq('id', gymId);
+      .rpc('update_gym_plan_prices', { new_prices: updated });
     if (error) {
       console.error('[usePlans] update error:', error);
       // Revert optimistic update on failure
